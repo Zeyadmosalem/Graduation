@@ -1,5 +1,6 @@
 import argparse
 import json
+import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Tuple, Set, Optional
@@ -64,22 +65,35 @@ def build_schema_maps(schema_entry: dict):
 
 def parse_sql(sql: str):
     from sqlglot import parse_one, exp
-    try:
-        ast = parse_one(sql, error_level="IGNORE")
-    except Exception:
+    ast = None
+    # Try a few likely dialects to improve robustness
+    for dialect in ("sqlite", "mysql", "tsql", "postgres", None):
+        try:
+            ast = parse_one(sql, read=dialect, error_level="IGNORE")
+            if ast is not None:
+                break
+        except Exception:
+            ast = None
+    if ast is None:
         return None
 
     # alias->table and set of explicit table tokens
     alias_to_table: Dict[str, str] = {}
     tables_in_from: List[str] = []
+    def _alias_name(a):
+        # sqlglot may return TableAlias node or a raw string for aliases
+        if a is None:
+            return None
+        return getattr(a, "name", a)
+
     for t in ast.find_all(exp.Table):
         name = t.name
-        alias = t.alias
+        alias = _alias_name(t.alias)
         if name:
             tables_in_from.append(name)
             alias_to_table[name] = name
-        if alias and alias.name:
-            alias_to_table[alias.name] = name or alias.name
+        if alias:
+            alias_to_table[alias] = name or alias
 
     # Collect column equality join conditions (WHERE or ON):
     # handle EQ comparisons where both sides are Columns
@@ -95,17 +109,17 @@ def parse_sql(sql: str):
                 join_pairs.append((ltab, lname, rtab, rname))
 
     # Handle USING/NATURAL joins
-    using_edges: List[Tuple[str, str, str, str]] = []
+    using_edges: List[Tuple[str, str, str, List[str]]] = []
     last_left_alias: Optional[str] = None
     from_node = ast.find(exp.From)
     if from_node and isinstance(from_node.this, exp.Table):
         base = from_node.this
-        last_left_alias = base.alias and base.alias.name or base.name
+        last_left_alias = _alias_name(base.alias) or base.name
     for j in ast.find_all(exp.Join):
         right = j.this
         right_alias = None
         if isinstance(right, exp.Table):
-            right_alias = right.alias and right.alias.name or right.name
+            right_alias = _alias_name(right.alias) or right.name
         using = j.args.get("using")
         natural = j.args.get("natural")
         if right_alias and (using or natural):
@@ -126,16 +140,26 @@ def parse_sql(sql: str):
         if right_alias:
             last_left_alias = right_alias
 
-    return alias_to_table, join_pairs, using_edges
+    # Collect all column references to help include single-table queries
+    columns: List[Tuple[Optional[str], str]] = []
+    for c in ast.find_all(exp.Column):
+        columns.append((c.table, c.name))
+
+    return alias_to_table, join_pairs, using_edges, tables_in_from, columns
 
 
 def build_gold_for_record(rec: dict, schema: dict):
     # Maps
     idx_to_ref, table_to_cols, fk_desc_map, fk_desc_map_rev = build_schema_maps(schema)
-    alias_to_table, join_pairs, using_edges = parse_sql(rec.get("SQL", "")) or ({}, [], [])
+    parsed = parse_sql(rec.get("SQL", "")) or ({}, [], [], [], [])
+    alias_to_table, join_pairs, using_edges, tables_in_from, columns = parsed
 
-    # Resolve tables referenced by joins/columns
+    # Resolve tables referenced by FROM/JOIN and joins/columns
     tables_needed: Set[str] = set()
+    # Include explicit tables from FROM/JOIN
+    for name in tables_in_from:
+        if name in table_to_cols:
+            tables_needed.add(name)
     edges: List[Dict] = []
 
     # EQ-based joins
@@ -172,6 +196,28 @@ def build_gold_for_record(rec: dict, schema: dict):
                 "parent_column": cname,
                 "description": desc,
             })
+
+    # Include tables implied by referenced columns (helps single-table queries without joins)
+    for t_alias, col in columns:
+        if t_alias:
+            real = alias_to_table.get(t_alias, t_alias)
+            if real in table_to_cols:
+                tables_needed.add(real)
+        else:
+            owners = [t for t, cols in table_to_cols.items() if any(cn == col for cn, _ in cols)]
+            if len(owners) == 1:
+                tables_needed.add(owners[0])
+
+    # If nothing inferred yet, fallback: scan SQL for schema table names (whole words)
+    if not tables_needed:
+        sql_l = (rec.get("SQL", "") or "").lower()
+        for t in table_to_cols.keys():
+            try:
+                if re.search(r"\b" + re.escape(t.lower()) + r"\b", sql_l):
+                    tables_needed.add(t)
+            except re.error:
+                # Skip exotic names that break regex
+                continue
 
     # Build nodes with all columns+descriptions
     nodes = []
@@ -256,4 +302,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -59,7 +59,9 @@ class App(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
-        if parsed.path == "/api/meta":
+        # Normalize trailing slashes so /api/meta/ also matches
+        path = parsed.path.rstrip("/") or "/"
+        if path == "/api/meta":
             meta = {}
             for split in ("train", "dev"):
                 dbs = [
@@ -70,7 +72,7 @@ class App(SimpleHTTPRequestHandler):
             self._json({"meta": meta})
             return
 
-        if parsed.path == "/graph":
+        if path == "/graph":
             qs = parse_qs(parsed.query)
             split = (qs.get("split", [""])[0] or "train").lower()
             try:
@@ -138,7 +140,7 @@ class App(SimpleHTTPRequestHandler):
             self.wfile.write(data)
             return
 
-        if parsed.path == "/api/list":
+        if path == "/api/list":
             qs = parse_qs(parsed.query)
             split = (qs.get("split", [""])[0] or "train").lower()
             db_id = qs.get("db_id", [None])[0]
@@ -163,7 +165,7 @@ class App(SimpleHTTPRequestHandler):
             self._json({"rows": rows})
             return
 
-        if parsed.path == "/api/item":
+        if path == "/api/item":
             qs = parse_qs(parsed.query)
             split = (qs.get("split", [""])[0] or "train").lower()
             try:
