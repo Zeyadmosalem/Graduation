@@ -5,7 +5,6 @@ from urllib.parse import urlparse, parse_qs
 
 ROOT = Path(__file__).resolve().parents[1]
 STATIC = Path(__file__).resolve().parent / "static"
-TMP = STATIC / "_tmp"
 
 
 def load_gold(split: str):
@@ -107,7 +106,10 @@ class App(SimpleHTTPRequestHandler):
                 self.wfile.write(data)
                 return
 
-            TMP.mkdir(parents=True, exist_ok=True)
+            from tempfile import gettempdir
+            import os
+            tmpdir = Path(gettempdir()) / "bird_graphs"
+            tmpdir.mkdir(parents=True, exist_ok=True)
             net = Network(height="600px", width="100%", directed=False, bgcolor="#ffffff", font_color="#222")
             net.toggle_physics(True)
 
@@ -130,7 +132,7 @@ class App(SimpleHTTPRequestHandler):
                 title = e.get("description", "")
                 net.add_edge(u, v, label=label, title=title)
 
-            out_file = TMP / f"{split}_{idx}.html"
+            out_file = tmpdir / f"{split}_{idx}.html"
             net.save_graph(str(out_file))
             data = out_file.read_text(encoding="utf-8").encode("utf-8")
             self.send_response(200)

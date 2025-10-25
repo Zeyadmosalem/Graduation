@@ -14,6 +14,7 @@ Translate the BIRD Text-to-SQL dataset (train/dev) into Arabic to expand highâ�
 - Schema enrichment to improve model grounding on ambiguous columns.
 - Normalized questions with Arabic placeholders to streamline translation.
 - Chunking utilities to distribute work across the team.
+- Gold graph generation with an interactive viewer to explore tables/joins per question.
 
 ## How It Works
 For each DB in train/dev tables JSON:
@@ -80,6 +81,84 @@ Prerequisites: Python 3.8+ (no external packages)
 - Step 3: Translate `question_ar` and `evidence_ar` across all chunks (in progress).
 - Optionally add Arabic schema summaries (e.g., FK `summary_ar`, Arabic column descriptions).
 - QA and publish an Arabic BIRD release for the community.
+
+## Diagrams
+
+### 1) Project Pipeline Overview
+```mermaid
+flowchart LR
+    A[Start] --> B[Step 1: Schema Enrichment\n(Completed)]
+    B --> C[Step 2: Gold Graph Generation\n(Completed)]
+    C --> D[Step 3: Translation\n(In Progress)]
+    style B fill:#d7ffd9,stroke:#0a0;color:#000
+    style C fill:#d7ffd9,stroke:#0a0;color:#000
+    style D fill:#fff7cc,stroke:#cc9a06,color:#000
+```
+
+### 2) Schema Enrichment Process
+```mermaid
+flowchart TD
+    S1[Load *_tables.json] --> S2[Locate database_description/*.csv]
+    S2 --> S3{Read CSV with fallback\nutf-8 → utf-8-sig → cp1252 → latin-1}
+    S3 --> S4[Map table -> columns -> descriptions]
+    S4 --> S5[Resolve FK pairs to child/parent columns]
+    S5 --> S6[Attach FK summaries + usage]
+    S4 --> S7[Populate column_descriptions aligned to column_names_original]
+    S6 --> S8[Write *_with_fk_desc.json]
+    S7 --> S8
+```
+
+### 3) Parallel Translation Workflow
+```mermaid
+flowchart TD
+    T1[Questions JSON] --> T2[Split into 4 balanced chunks]
+    T2 --> T3A[Team A]
+    T2 --> T3B[Team B]
+    T2 --> T3C[Team C]
+    T2 --> T3D[Team D]
+    T3A --> T4[Merge Arabic fields]
+    T3B --> T4
+    T3C --> T4
+    T3D --> T4
+```
+
+### 4) Data Structure Transformation
+```mermaid
+flowchart LR
+    D1[Original BIRD\ntrain/dev tables + questions]
+      --> D2[Augmented Schemas\n*_tables_with_fk_desc.json]
+      --> D3[Normalized Questions\nquestion_en/ar, evidence_en/ar]
+      --> D4[Gold Graphs\ntrain/dev_gold_graphs.json]
+```
+
+### 5) System Architecture
+```mermaid
+graph TD
+    subgraph Inputs
+      I1[BIRD train/dev tables]
+      I2[BIRD train/dev questions]
+    end
+
+    subgraph Processing Scripts
+      P1[augment_fk_descriptions.py]
+      P2[add_ar_field.py]
+      P3[split_questions.py]
+      P4[build_gold_graphs.py]
+    end
+
+    subgraph Outputs
+      O1[*_tables_with_fk_desc.json]
+      O2[train/dev normalized questions]
+      O3[train/dev question chunks]
+      O4[train/dev_gold_graphs.json]
+    end
+
+    I1 --> P1 --> O1
+    I2 --> P2 --> O2
+    O2 --> P3 --> O3
+    O1 --> P4
+    O2 --> P4 --> O4
+```
 
 ## License
 This repository includes derived metadata from the BIRD dataset. Please follow BIRDâ€™s terms for redistribution and use.
