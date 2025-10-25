@@ -23,3 +23,6 @@ BIRD/dev_20240627/**
 
 !BIRD/scripts/split_questions.py
 
+
+!BIRD/scripts/build_gold_graphs.py
+
