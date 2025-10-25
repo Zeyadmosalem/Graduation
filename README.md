@@ -1,70 +1,70 @@
-﻿Project: BIRD Schema Context Augmentation
+# BIRD Arabic Translation & Schema Context Augmentation
 
-Overview
-- Goal: Enrich BIRD train/dev table schemas with per-column meanings and clear foreign key (FK) usage to improve Text-to-SQL training (especially for ambiguous names like id or abbreviation).
-- Output: New JSONs alongside the originals that add two fields per DB:
-  - foreign_key_descriptions: For each FK pair, includes child/parent sides and a concise summary of how the FK links tables.
-  - column_descriptions: One string per column (aligned with column_names_original) populated from per-table CSV descriptions.
+## Objective
+Translate the BIRD Text-to-SQL dataset (train/dev) into Arabic to expand high‑quality Arabic resources. Currently there are only two Arabic versions of Spider; this project targets broader Arabic coverage for Text‑to‑SQL.
 
-Why this idea
-- Ambiguous column names (e.g., id, code, abbreviation) frequently confuse Text-to-SQL models.
-- The BIRD dataset already ships rich per-table, per-column descriptions in database_description/*.csv files.
-- By programmatically joining these descriptions into the train/dev tables JSONs, we provide the model with explicit semantics and FK usage context at training time.
+## Plan Overview
+- Step 1 — Schema enrichment (completed):
+  - Add per‑column meanings and clear FK usage into the BIRD `*_tables.json` so models get better context (helps with ambiguous names like `id`, `code`, `abbreviation`).
+- Step 2 — Translation (in progress):
+  - Normalize question entries to include `question_en`/`question_ar` and `evidence_en`/`evidence_ar`.
+  - Split questions into 4 balanced chunks per file so 4 team members can translate in parallel with no duplicates.
 
-How it works
-- For each DB in train/dev tables JSON:
-  - Locate database_description/*.csv files by table name.
-  - Build a map: table -> { column -> column_description } using robust normalization (case-insensitive, ignore separators) and encoding fallbacks (UTF-8, UTF-8-SIG, CP1252, Latin-1).
-  - For foreign_keys (index pairs), resolve child/parent columns and attach a description object:
-    - child_table, child_column, parent_table, parent_column
-    - child_description, parent_description
-    - summary: a concise sentence like "child.col references parent.col. {description}." with redundancy trimmed
-    - usage: explicit linkage sentence
-  - For all columns, populate column_descriptions aligned to column_names_original (empty string for the special [ -1, "*" ] row).
+## What We Built
+- Schema enrichment to improve model grounding on ambiguous columns.
+- Normalized questions with Arabic placeholders to streamline translation.
+- Chunking utilities to distribute work across the team.
 
-Reproducibility (How to run)
-- Prerequisites: Python 3.8+ (no external packages required).
-- Script path: scripts/augment_fk_descriptions.py
-- Default locations assumed:
-  - Train: BIRD/train/train_tables.json; DB roots under BIRD/train/train_databases/train_databases
-  - Dev: BIRD/dev_20240627/dev_tables.json; DB roots under BIRD/dev_20240627/dev_databases (auto-extracts dev_databases.zip if present)
+## How It Works
+For each DB in train/dev tables JSON:
+- Locate `database_description/*.csv` by table name.
+- Build a map: `table -> { column -> column_description }` using robust normalization and encoding fallbacks (utf‑8, utf‑8‑sig, cp1252, latin‑1).
+- For `foreign_keys` (index pairs), resolve child/parent columns and attach a description object:
+  - child_table, child_column, parent_table, parent_column
+  - child_description, parent_description
+  - summary (concise, non‑redundant), usage
+- For all columns, populate `column_descriptions` aligned to `column_names_original` (empty string for the special `[-1, "*"]` row).
 
-Commands
-- Train only (writes train/train_tables_with_fk_desc.json):
-  - python scripts/augment_fk_descriptions.py --split train
-- Dev only (writes dev_20240627/dev_tables_with_fk_desc.json):
-  - python scripts/augment_fk_descriptions.py --split dev
-- Both splits (writes both outputs):
-  - python scripts/augment_fk_descriptions.py --split both
+## Reproducibility
+Prerequisites: Python 3.8+ (no external packages)
 
-Advanced options
-- --in-place: overwrite the original _tables.json instead of creating a new file.
-- --tables-json <path>: manually provide a tables JSON path (for non-standard layouts).
-- --db-root <path>: add or override database roots (repeatable).
-- --out-json <path>: set a custom output path.
+- Augment schemas (writes `*_with_fk_desc.json`):
+  - Train: `python BIRD/scripts/augment_fk_descriptions.py --split train`
+  - Dev: `python BIRD/scripts/augment_fk_descriptions.py --split dev`
+  - Both: `python BIRD/scripts/augment_fk_descriptions.py --split both`
 
-Whatâ€™s inside this repo
-- train/
-  - train_tables.json (original BIRD train tables)
-  - train_tables_with_fk_desc.json (augmented with FK + column descriptions)
-  - train.json (original BIRD train questions)
-- dev/
-  - dev_tables.json (original BIRD dev tables)
-  - dev_tables_with_fk_desc.json (augmented with FK + column descriptions)
-  - dev.json (original BIRD dev questions)
-  - dev_tied_append.json (BIRD dev additional questions)
-- scripts/
-  - augment_fk_descriptions.py (the automation script)
+- Normalize questions & add Arabic placeholders:
+  - `python BIRD/scripts/add_ar_field.py`
 
-Notes and limitations
-- If a description is missing in CSVs for a particular column, the corresponding entry in column_descriptions is left empty, and FK summaries use whichever side has a description available.
-- The script normalizes names (case/space/underscore/hyphen) to match CSVs to JSON; exotic naming mismatches can still cause misses.
-- No network is required. The dev databases zip is extracted locally if needed.
+- Split questions into 4 chunks for translators:
+  - `python BIRD/scripts/split_questions.py BIRD/train/train.json BIRD/dev_20240627/dev.json BIRD/dev_20240627/dev_tied_append.json --parts 4`
 
-Extending / Arabic translation
-- To support multilingual context, add a translation pass to produce summary_ar and/or column_description_ar using your preferred translation pipeline or glossary.
-- The augmentation logic is deterministic given the same inputs and encodings, so post-translation fields can be layered on without changing the schema join logic.
+## Repository Contents (tracked)
+- `BIRD/train/`
+  - `train_tables.json` (original schema)
+  - `train_tables_with_fk_desc.json` (schema + FK and column descriptions)
+  - `train.json` (questions with EN/AR fields)
+  - `train_part{1..4}of4.json` (split for translators)
+- `BIRD/dev_20240627/`
+  - `dev_tables.json` (original schema)
+  - `dev_tables_with_fk_desc.json` (schema + FK and column descriptions)
+  - `dev.json`, `dev_tied_append.json` (questions with EN/AR fields)
+  - `dev_part{1..4}of4.json`, `dev_tied_append_part{1..4}of4.json` (split for translators)
+- `BIRD/scripts/`
+  - `augment_fk_descriptions.py` (augmentation)
+  - `add_ar_field.py` (EN/AR normalization)
+  - `split_questions.py` (chunking)
 
-License
-- This repo includes derived metadata from the BIRD dataset. Please follow BIRDâ€™s terms for redistribution and use.
+## Notes
+- If a CSV lacks a column description, the corresponding entry in `column_descriptions` stays empty; FK summaries still describe the relationship.
+- Name matching is robust (case‑insensitive, ignores separators) with encoding fallbacks.
+- No network is needed; dev databases ZIP is handled locally if present.
+
+## Next Steps
+- Translate `question_ar` and `evidence_ar` across all chunks.
+- Optionally add Arabic schema summaries (e.g., FK `summary_ar`, Arabic column descriptions).
+- QA and publish an Arabic BIRD release for the community.
+
+## License
+This repository includes derived metadata from the BIRD dataset. Please follow BIRD’s terms for redistribution and use.
 
