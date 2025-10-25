@@ -29,4 +29,5 @@ BIRD/dev_20240627/**
 
 !BIRD/graph_viewer/
 !BIRD/graph_viewer/**
+BIRD/graph_viewer/static/_tmp/**
 
