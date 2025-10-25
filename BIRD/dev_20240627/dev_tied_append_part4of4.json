@@ -1,0 +1,102 @@
+[
+    {
+        "question_id": 1090,
+        "db_id": "european_football_2",
+        "question_en": "What is the long passing score of the oldest player?",
+        "question_ar": "",
+        "evidence_en": "long passing score refers to long_passing; oldest player refers to oldest birthday;",
+        "evidence_ar": "",
+        "SQL": "SELECT T2.long_passing FROM Player AS T1 INNER JOIN Player_Attributes AS T2 ON T1.player_api_id = T2.player_api_id WHERE T1.birthday = (SELECT MIN(birthday) FROM Player)",
+        "difficulty": "simple"
+    },
+    {
+        "question_id": 1123,
+        "db_id": "european_football_2",
+        "question_en": "What is the name of players with the highest potential?",
+        "question_ar": "",
+        "evidence_en": "highest potential refers to MAX(potential)",
+        "evidence_ar": "",
+        "SQL": "SELECT DISTINCT T1.player_name FROM Player AS T1 INNER JOIN Player_Attributes AS T2 ON T1.player_api_id = T2.player_api_id WHERE T2.potential = (SELECT MAX(potential) FROM Player_Attributes)",
+        "difficulty": "simple"
+    },
+    {
+        "question_id": 1253,
+        "db_id": "thrombosis_prediction",
+        "question_en": "For the patient who has the highest Ig A within the normal range, what is his or her diagnosis?",
+        "question_ar": "",
+        "evidence_en": "highest Ig A within the normal range refers to MAX(IGA BETWEEN 80 AND 500);",
+        "evidence_ar": "",
+        "SQL": "SELECT T1.Diagnosis FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.IGA = (SELECT MAX(IGA) FROM Laboratory WHERE IGA BETWEEN 80 AND 500)",
+        "difficulty": "simple"
+    },
+    {
+        "question_id": 1284,
+        "db_id": "thrombosis_prediction",
+        "question_en": "For the patient with the highest lactate dehydrogenase in the normal range, when was his or her data first recorded?",
+        "question_ar": "",
+        "evidence_en": "highest lactate dehydrogenase in the normal range refers to MAX(LDH < 500); when the data first recorded refers to MIN(First Date);",
+        "evidence_ar": "",
+        "SQL": "SELECT T1.`First Date` FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T2.LDH = (SELECT MAX(LDH) FROM Laboratory WHERE LDH < 500)",
+        "difficulty": "moderate"
+    },
+    {
+        "question_id": 1290,
+        "db_id": "thrombosis_prediction",
+        "question_en": "What is the examination date of the patient whose albumin is the highest in the normal range?",
+        "question_ar": "",
+        "evidence_en": "examination date refers to Date; albumin is the highest in the normal range refers to MAX(ALB > 3.5 and ALB < 5.5);",
+        "evidence_ar": "",
+        "SQL": "SELECT Date FROM Laboratory WHERE ALB = (SELECT MAX(ALB) FROM Laboratory WHERE ALB BETWEEN 3.5 AND 5.5)",
+        "difficulty": "simple"
+    },
+    {
+        "question_id": 1318,
+        "db_id": "student_club",
+        "question_en": "What is the event that has the highest attendance of the students from the Student_Club?",
+        "question_ar": "",
+        "evidence_en": "event with highest attendance refers to MAX(COUNT(link_to_event))",
+        "evidence_ar": "",
+        "SQL": "SELECT T1.event_name FROM event AS T1 INNER JOIN attendance AS T2 ON T1.event_id = T2.link_to_event GROUP BY T1.event_name HAVING COUNT(T2.link_to_event) = (SELECT MAX(attendance_count) FROM (SELECT COUNT(link_to_event) AS attendance_count FROM attendance GROUP BY link_to_event) AS subquery)",
+        "difficulty": "simple"
+    },
+    {
+        "question_id": 1365,
+        "db_id": "student_club",
+        "question_en": "What are the expenses of the budget with the lowest remaining?",
+        "question_ar": "",
+        "evidence_en": "expense of budget refers to expense_description; lowest remaining refers to MIN(remaining)",
+        "evidence_ar": "",
+        "SQL": "SELECT T2.expense_description FROM budget AS T1 INNER JOIN expense AS T2 ON T1.budget_id = T2.link_to_budget WHERE T1.remaining = (SELECT MIN(remaining) FROM budget)",
+        "difficulty": "simple"
+    },
+    {
+        "question_id": 1388,
+        "db_id": "student_club",
+        "question_en": "Which students manage to generate the highest income. State his/her full name along with the income source.",
+        "question_ar": "",
+        "evidence_en": "name of students means the full name; full name refers to first_name, last_name; generate the highest income refers to MAX(income.amount);",
+        "evidence_ar": "",
+        "SQL": "SELECT T1.first_name, T1.last_name, T2.source FROM member AS T1 INNER JOIN income AS T2 ON T1.member_id = T2.link_to_member WHERE T2.amount = (SELECT MAX(T4.amount) FROM member AS T3 INNER JOIN income AS T4 ON T3.member_id = T4.link_to_member)",
+        "difficulty": "moderate"
+    },
+    {
+        "question_id": 1389,
+        "db_id": "student_club",
+        "question_en": "Which event has the lowest cost?",
+        "question_ar": "",
+        "evidence_en": "event refers to event_name where MIN(cost)",
+        "evidence_ar": "",
+        "SQL": "SELECT T1.event_name FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event INNER JOIN expense AS T3 ON T2.budget_id = T3.link_to_budget WHERE T3.cost = (SELECT MIN(T6.cost) FROM event AS T4 INNER JOIN budget AS T5 ON T4.event_id = T5.link_to_event INNER JOIN expense AS T6 ON T5.budget_id = T6.link_to_budget)",
+        "difficulty": "simple"
+    },
+    {
+        "question_id": 1517,
+        "db_id": "debit_card_specializing",
+        "question_en": "For the earliest customer, what segment did he/she have?",
+        "question_ar": "",
+        "evidence_en": "",
+        "evidence_ar": "",
+        "SQL": "SELECT T2.Segment FROM transactions_1k AS T1 INNER JOIN customers AS T2 ON T1.CustomerID = T2.CustomerID WHERE T1.Date = (SELECT MIN(Date) FROM transactions_1k)",
+        "difficulty": "simple"
+    }
+]

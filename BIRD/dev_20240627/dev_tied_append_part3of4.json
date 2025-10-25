@@ -1,0 +1,102 @@
+[
+    {
+        "question_id": 828,
+        "db_id": "superhero",
+        "question_en": "Count the fastest superheroes.",
+        "question_ar": "",
+        "evidence_en": "fastest refers to attribute_value = 100 WHERE attribute_name = 'Speed';",
+        "evidence_ar": "",
+        "SQL": "SELECT COUNT(T3.superhero_name) FROM hero_attribute AS T1 INNER JOIN attribute AS T2 ON T1.attribute_id = T2.id INNER JOIN superhero AS T3 ON T1.hero_id = T3.id WHERE T2.attribute_name = 'Speed' AND T1.attribute_value = (SELECT MAX(T4.attribute_value) FROM hero_attribute AS T4 INNER JOIN attribute AS T5 ON T4.attribute_id = T5.id WHERE T5.attribute_name = 'Speed')",
+        "difficulty": "simple"
+    },
+    {
+        "question_id": 832,
+        "db_id": "superhero",
+        "question_en": "Name the tallest superhero.",
+        "question_ar": "",
+        "evidence_en": "tallest superhero refers to MAX(height_cm);",
+        "evidence_ar": "",
+        "SQL": "SELECT superhero_name FROM superhero WHERE height_cm = (SELECT MAX(height_cm) FROM superhero)",
+        "difficulty": "simple"
+    },
+    {
+        "question_id": 847,
+        "db_id": "formula_1",
+        "question_en": "What is the surname of the driver with the best lap time in race number 19 in the second period?",
+        "question_ar": "",
+        "evidence_en": "race number refers to raceId; second qualifying period refers to q2; best lap time refers to MIN(q2);",
+        "evidence_ar": "",
+        "SQL": "SELECT T2.surname FROM qualifying AS T1 INNER JOIN drivers AS T2 ON T2.driverId = T1.driverId WHERE T1.raceId = 19 AND T1.q2 IS NOT NULL AND T1.q2 = (SELECT MIN(q2) AS min_q2 FROM qualifying WHERE raceId = 19 AND q2 IS NOT NULL)",
+        "difficulty": "simple"
+    },
+    {
+        "question_id": 906,
+        "db_id": "formula_1",
+        "question_en": "Which was Lewis Hamilton first race? What was his points recorded for his first race event?",
+        "question_ar": "",
+        "evidence_en": "first race refers to min(Year)",
+        "evidence_ar": "",
+        "SQL": "SELECT T1.name, T2.points FROM races AS T1 INNER JOIN driverStandings AS T2 ON T2.raceId = T1.raceId INNER JOIN drivers AS T3 ON T3.driverId = T2.driverId WHERE T3.forename = 'Lewis' AND T3.surname = 'Hamilton' AND T1.year = (SELECT MIN(T4.year) FROM races AS T4 INNER JOIN driverStandings AS T5 ON T5.raceId = T4.raceId INNER JOIN drivers AS T6 ON T6.driverId = T5.driverId WHERE T6.forename = 'Lewis' AND T6.surname = 'Hamilton')",
+        "difficulty": "moderate"
+    },
+    {
+        "question_id": 908,
+        "db_id": "formula_1",
+        "question_en": "What is the most laps f1 races had? Name the race, year and circuit location where the races with most laps was hosted.",
+        "question_ar": "",
+        "evidence_en": "",
+        "evidence_ar": "",
+        "SQL": "SELECT T3.lap, T2.name, T2.year, T1.location FROM circuits AS T1 INNER JOIN races AS T2 ON T1.circuitId = T2.circuitId INNER JOIN lapTimes AS T3 ON T3.raceId = T2.raceId WHERE T3.lap = (SELECT MAX(T4.lap) FROM lapTimes AS T4)",
+        "difficulty": "simple"
+    },
+    {
+        "question_id": 1020,
+        "db_id": "european_football_2",
+        "question_en": "Which player has the highest overall rating? Indicate the player's api id.",
+        "question_ar": "",
+        "evidence_en": "highest overall rating refers to MAX(overall_rating);",
+        "evidence_ar": "",
+        "SQL": "SELECT player_api_id FROM Player_Attributes WHERE overall_rating = (SELECT MAX(overall_rating) FROM Player_Attributes)",
+        "difficulty": "simple"
+    },
+    {
+        "question_id": 1022,
+        "db_id": "european_football_2",
+        "question_en": "What is the preferred foot when attacking of the player with the lowest potential?",
+        "question_ar": "",
+        "evidence_en": "preferred foot when attacking refers to preferred_foot; lowest potential refers to MIN(potential);",
+        "evidence_ar": "",
+        "SQL": "SELECT preferred_foot FROM Player_Attributes WHERE penalties AND potential = (SELECT MIN(potential) FROM Player_Attributes)",
+        "difficulty": "simple"
+    },
+    {
+        "question_id": 1026,
+        "db_id": "european_football_2",
+        "question_en": "Which home team had lost the fewest matches in the 2016 season?",
+        "question_ar": "",
+        "evidence_en": "home team lost the matches refers to SUBTRACT(home_team_goal, away_team_goal) < 0; 2016 season refers to season = '2015/2016';",
+        "evidence_ar": "",
+        "SQL": "SELECT t3.team_long_name FROM Match AS t1 INNER JOIN Team AS t3 ON t1.home_team_api_id = t3.team_api_id WHERE t1.season = '2015/2016' AND t1.home_team_goal - t1.away_team_goal < 0 GROUP BY t1.home_team_api_id HAVING COUNT(*) = (SELECT MIN(lost_matches_count) FROM (SELECT home_team_api_id, COUNT(*) AS lost_matches_count FROM Match WHERE season = '2015/2016' AND home_team_goal - away_team_goal < 0 GROUP BY home_team_api_id))",
+        "difficulty": "moderate"
+    },
+    {
+        "question_id": 1028,
+        "db_id": "european_football_2",
+        "question_en": "In Scotland Premier League, which away team won the most during the 2010 season?",
+        "question_ar": "",
+        "evidence_en": "Scotland Premier League refers to League.name = 'Scotland Premier League'; away team refers to away_team_api_id; away team that won the most refers to MAX(SUBTRACT(away_team_goal, home_team_goal) > 0); 2010 season refers to season = '2009/2010';",
+        "evidence_ar": "",
+        "SQL": "SELECT t3.team_long_name FROM League AS t1 INNER JOIN Match AS t2 ON t1.id = t2.league_id INNER JOIN Team AS t3 ON t2.away_team_api_id = t3.team_api_id WHERE t1.name = 'Scotland Premier League' AND t2.season = '2009/2010' AND t2.away_team_goal - t2.home_team_goal > 0 GROUP BY t2.away_team_api_id HAVING COUNT(*) = (SELECT MAX(won_matches_count) FROM (SELECT away_team_api_id, COUNT(*) AS won_matches_count FROM Match AS m INNER JOIN League AS l ON m.league_id = l.id WHERE l.name = 'Scotland Premier League' AND m.season = '2009/2010' AND m.away_team_goal - m.home_team_goal > 0 GROUP BY m.away_team_api_id))",
+        "difficulty": "challenging"
+    },
+    {
+        "question_id": 1034,
+        "db_id": "european_football_2",
+        "question_en": "List the players' api id who had the highest above average overall ratings in 2010.",
+        "question_ar": "",
+        "evidence_en": "highest above average overall ratings refers to MAX(overall_rating); in 2010 refers to substr(date,1,4) = '2010';",
+        "evidence_ar": "",
+        "SQL": "SELECT p.player_api_id FROM Player_Attributes AS p WHERE SUBSTR(p.date, 1, 4) = '2010' AND p.overall_rating = (SELECT MAX(pa.overall_rating) FROM Player_Attributes AS pa WHERE SUBSTR(pa.date, 1, 4) = '2010')",
+        "difficulty": "simple"
+    }
+]

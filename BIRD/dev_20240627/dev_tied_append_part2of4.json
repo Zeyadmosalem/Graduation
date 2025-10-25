@@ -1,0 +1,112 @@
+[
+    {
+        "question_id": 476,
+        "db_id": "card_games",
+        "question_en": "Please list the name of the cards in the set Coldsnap with the highest converted mana cost.",
+        "question_ar": "",
+        "evidence_en": "card set Coldsnap refers to name = 'Coldsnap'",
+        "evidence_ar": "",
+        "SQL": "SELECT T1.name FROM cards AS T1 INNER JOIN sets AS T2 ON T2.code = T1.setCode WHERE T2.name = 'Coldsnap' AND T1.convertedManaCost = (SELECT MAX(convertedManaCost)  FROM cards AS T1 INNER JOIN sets AS T2 ON T2.code = T1.setCode WHERE T2.name = 'Coldsnap')",
+        "difficulty": "simple"
+    },
+    {
+        "question_id": 484,
+        "db_id": "card_games",
+        "question_en": "Please list the Italian names of the cards in the set Coldsnap with the highest converted mana cost.",
+        "question_ar": "",
+        "evidence_en": "card set Coldsnap refers to name = 'Coldsnap'; Italian refers to language = 'Italian'",
+        "evidence_ar": "",
+        "SQL": "SELECT T2.name FROM foreign_data AS T1 INNER JOIN cards AS T2 ON T2.uuid = T1.uuid INNER JOIN sets AS T3 ON T3.code = T2.setCode WHERE T3.name = 'Coldsnap' AND T1.language = 'Italian' AND T2.convertedManaCost = (SELECT MAX(convertedManaCost) FROM foreign_data AS T1 INNER JOIN cards AS T2 ON T2.uuid = T1.uuid INNER JOIN sets AS T3 ON T3.code = T2.setCode WHERE T3.name = 'Coldsnap' AND T1.language = 'Italian')",
+        "difficulty": "moderate"
+    },
+    {
+        "question_id": 515,
+        "db_id": "card_games",
+        "question_en": "When was the oldest mythic card released and what are its legal play formats?",
+        "question_ar": "",
+        "evidence_en": "the oldest card refers to MIN(originalReleaseDate); mythic card refers to rarity = 'mythic'; legal play refers to status = 'legal'; play format refers to format",
+        "evidence_ar": "",
+        "SQL": "SELECT T1.originalReleaseDate, T2.format FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid WHERE T1.rarity = 'mythic' AND T1.originalReleaseDate IS NOT NULL AND T2.status = 'Legal' AND T1.originalReleaseDate = (SELECT MIN(originalReleaseDate) FROM cards AS T1 INNER JOIN legalities AS T2 ON T1.uuid = T2.uuid WHERE T1.rarity = 'mythic' AND T1.originalReleaseDate IS NOT NULL AND T2.status = 'Legal')",
+        "difficulty": "moderate"
+    },
+    {
+        "question_id": 610,
+        "db_id": "codebase_community",
+        "question_en": "What are the names of badges that users who have the highest reputation obtained?",
+        "question_ar": "",
+        "evidence_en": "highest reputation refers to Max(Reputation); user refers to UserId",
+        "evidence_ar": "",
+        "SQL": "SELECT T2.name FROM users AS T1 INNER JOIN badges AS T2 ON T1.Id = T2.UserId WHERE T1.Reputation = (SELECT MAX(Reputation) FROM users)",
+        "difficulty": "simple"
+    },
+    {
+        "question_id": 621,
+        "db_id": "codebase_community",
+        "question_en": "What are the name of badges that users who have the lowest reputation obtained?",
+        "question_ar": "",
+        "evidence_en": "lowest reputation refers to Min(Reputation); user refers to UserId",
+        "evidence_ar": "",
+        "SQL": "SELECT T2.Name, T1.Reputation FROM users AS T1 INNER JOIN badges AS T2 ON T1.Id = T2.UserId WHERE T1.Reputation = (SELECT MIN(Reputation) FROM users)",
+        "difficulty": "simple"
+    },
+    {
+        "question_id": 694,
+        "db_id": "codebase_community",
+        "question_en": "Provide the text of the latest comment to the post with the title 'Analysing wind data with R' and the display name of the user who left it.",
+        "question_ar": "",
+        "evidence_en": "the latest comment refers to MAX(CreationDate);",
+        "evidence_ar": "",
+        "SQL": "SELECT T3.Text, T1.DisplayName FROM users AS T1 INNER JOIN posts AS T2 ON T1.Id = T2.OwnerUserId INNER JOIN comments AS T3 ON T2.Id = T3.PostId WHERE T2.Title = 'Analysing wind data with R' AND T3.CreationDate = (SELECT MAX(T4.CreationDate) FROM users AS T5 INNER JOIN posts AS T6 ON T5.Id = T6.OwnerUserId INNER JOIN comments AS T4 ON T6.Id = T4.PostId WHERE T6.Title = 'Analysing wind data with R')",
+        "difficulty": "moderate"
+    },
+    {
+        "question_id": 736,
+        "db_id": "superhero",
+        "question_en": "Who is the dumbest superhero?",
+        "question_ar": "",
+        "evidence_en": "the dumbest superhero refers to MIN(attribute_value) where attribute_name = 'Intelligence'",
+        "evidence_ar": "",
+        "SQL": "SELECT T1.superhero_name FROM superhero AS T1 INNER JOIN hero_attribute AS T2 ON T1.id = T2.hero_id INNER JOIN attribute AS T3 ON T2.attribute_id = T3.id WHERE T3.attribute_name = 'Intelligence' AND T2.attribute_value = (SELECT MIN(T4.attribute_value) FROM hero_attribute AS T4 INNER JOIN attribute AS T5 ON T4.attribute_id = T5.id WHERE T5.attribute_name = 'Intelligence')",
+        "difficulty": "moderate"
+    },
+    {
+        "question_id": 766,
+        "db_id": "superhero",
+        "question_en": "What is the hero's full name with the highest attribute in strength?",
+        "question_ar": "",
+        "evidence_en": "highest attribute in strength refers to MAX(attribute_value) WHERE attribute_name = 'strength';",
+        "evidence_ar": "",
+        "SQL": "SELECT T1.full_name FROM superhero AS T1 INNER JOIN hero_attribute AS T2 ON T1.id = T2.hero_id INNER JOIN attribute AS T3 ON T2.attribute_id = T3.id WHERE T3.attribute_name = 'Strength' AND T2.attribute_value = (SELECT MAX(T4.attribute_value) FROM hero_attribute AS T4 INNER JOIN attribute AS T5 ON T4.attribute_id = T5.id WHERE T5.attribute_name = 'Strength')",
+        "difficulty": "moderate"
+    },
+    {
+        "question_id": 769,
+        "db_id": "superhero",
+        "question_en": "Which superhero has the most durability published by Dark Horse Comics?",
+        "question_ar": "",
+        "evidence_en": "which superhero refers to superhero_name; most durability refers to MAX(attribute_value) WHERE attribute_name = 'durability'; published by Dark Horse Comics refers to publisher_name = 'Dark Horse Comics';",
+        "evidence_ar": "",
+        "SQL": "SELECT T1.superhero_name FROM superhero AS T1 INNER JOIN hero_attribute AS T2 ON T1.id = T2.hero_id INNER JOIN attribute AS T3 ON T3.id = T2.attribute_id INNER JOIN publisher AS T4 ON T4.id = T1.publisher_id WHERE T4.publisher_name = 'Dark Horse Comics' AND T2.attribute_value = (SELECT MAX(T5.attribute_value) FROM superhero AS T6 INNER JOIN hero_attribute AS T5 ON T6.id = T5.hero_id INNER JOIN publisher AS T7 ON T7.id = T6.publisher_id WHERE T7.publisher_name = 'Dark Horse Comics')",
+        "difficulty": "challenging"
+    },
+    {
+        "question_id": 802,
+        "db_id": "superhero",
+        "question_en": "Who is the tallest superhero?",
+        "question_ar": "",
+        "evidence_en": "who refers to superhero_name; tallest superhero refers to MAX(height_cm);",
+        "evidence_ar": "",
+        "SQL": "SELECT superhero_name FROM superhero WHERE height_cm = (SELECT MAX(height_cm) FROM superhero)",
+        "difficulty": "simple"
+    },
+    {
+        "question_id": 810,
+        "db_id": "superhero",
+        "question_en": "What is the race of the superhero with maximum attribute value?",
+        "question_ar": "",
+        "evidence_en": "maximum attribute value refers to MAX(attribute_value);",
+        "evidence_ar": "",
+        "SQL": "SELECT T3.race FROM superhero AS T1 INNER JOIN hero_attribute AS T2 ON T1.id = T2.hero_id INNER JOIN race AS T3 ON T1.race_id = T3.id WHERE T2.attribute_value = (SELECT MAX(T4.attribute_value) FROM hero_attribute AS T4)",
+        "difficulty": "simple"
+    }
+]

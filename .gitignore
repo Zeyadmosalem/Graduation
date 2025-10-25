@@ -12,9 +12,11 @@ BIRD/train/**
 !BIRD/train/train.json
 !BIRD/train/train_tables.json
 !BIRD/train/train_tables_with_fk_desc.json
+!BIRD/train/*.json
 !BIRD/dev_20240627/
 BIRD/dev_20240627/**
 !BIRD/dev_20240627/dev.json
 !BIRD/dev_20240627/dev_tied_append.json
 !BIRD/dev_20240627/dev_tables.json
 !BIRD/dev_20240627/dev_tables_with_fk_desc.json
+!BIRD/dev_20240627/*.json
