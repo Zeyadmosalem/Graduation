@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BIRD Gold Graph Viewer</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>BIRD Gold Graph Viewer</h1>
+      </header>
+      <section class="controls">
+        <label>
+          Split
+          <select id="split">
+            <option value="train">train</option>
+            <option value="dev">dev</option>
+          </select>
+        </label>
+        <label>
+          DB
+          <select id="db"></select>
+        </label>
+        <input id="search" placeholder="Search question/SQL" />
+        <button id="refresh">Refresh</button>
+      </section>
+      <main>
+        <aside id="list"></aside>
+        <section id="detail">
+          <div id="meta"></div>
+          <pre id="question"></pre>
+          <pre id="sql"></pre>
+          <div id="graph">
+            <h3>Nodes</h3>
+            <div id="nodes"></div>
+            <h3>Edges</h3>
+            <div id="edges"></div>
+          </div>
+          <h3>Context</h3>
+          <pre id="context"></pre>
+        </section>
+      </main>
+    </div>
+    <script src="/static/app.js"></script>
+  </body>
+  </html>
+
