@@ -73,6 +73,9 @@ async function showItem(split, idx) {
   qs('#sql').textContent = rec.SQL || '';
   qs('#context').textContent = rec.context_text || '';
   renderGraph(rec.gold_graph || { nodes: [], edges: [] });
+  // Load interactive graph via pyvis
+  const frame = qs('#graph_iframe');
+  frame.src = `/graph?split=${encodeURIComponent(split)}&idx=${idx}`;
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -83,4 +86,3 @@ document.addEventListener('DOMContentLoaded', async () => {
   qs('#refresh').addEventListener('click', loadList);
   qs('#search').addEventListener('input', loadList);
 });
-
