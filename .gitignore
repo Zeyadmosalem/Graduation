@@ -1,4 +1,4 @@
-*
+﻿*
 !.gitignore
 !BIRD/
 BIRD/**
@@ -20,3 +20,6 @@ BIRD/dev_20240627/**
 !BIRD/dev_20240627/dev_tables.json
 !BIRD/dev_20240627/dev_tables_with_fk_desc.json
 !BIRD/dev_20240627/*.json
+
+!BIRD/scripts/split_questions.py
+
