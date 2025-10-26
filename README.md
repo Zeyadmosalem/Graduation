@@ -1,7 +1,7 @@
 # Arabic-BIRD: Schema-Enriched Arabic Extension of the BIRD Text-to-SQL Benchmark
 
 ## Overview
-This repository introduces **Arabic-BIRD**, a schema-enriched Arabic extension of the BIRD Text-to-SQL benchmark. The aim is to advance research in **cross-lingual semantic parsing** and provide a high-quality Arabic resource for the NLP community. The work contributes: (1) a **new Arabic Text-to-SQL dataset**, (2) a **reproducible methodology** for schema-aware multilingual dataset construction, and (3) an **extension of BIRD** with enriched schema context to improve model grounding.
+This repository introduces **Arabic-BIRD**, a schema-enriched Arabic extension of the BIRD Text-to-SQL benchmark. The aim is to advance research in **cross-lingual semantic parsing** and provide a high-quality Arabic dataset for Text-to-SQL tasks.
 
 This release targets research in **multilingual Text-to-SQL**, **semantic parsing**, **schema linking**, and **cross-lingual generalization**.
 
@@ -21,12 +21,32 @@ An augmented version of BIRD incorporating column-level descriptions and FK usag
 
 ---
 
+## Contributors
+
+### 👨‍💻 Core Development
+- **[@AbdelrahmanAboegela](https://github.com/AbdelrahmanAboegela)** - Lead Developer
+  - ✅ **Phase 1**: Schema Enrichment (Completed)
+  - ✅ **Phase 2**: Gold Graph Generation (Completed)
+  - 🛠️ Pipeline Architecture & Implementation
+
+### 🌍 Translation Team
+The following contributors are working on **Phase 3: Arabic Translation**:
+
+- **[@ibrahim-abd-elmotteleb](https://github.com/ibrahim-abd-elmotteleb)** — Ibrahim Abdelmotteleb (Translator)
+- **[@SHEhabDevPro](https://github.com/SHEhabDevPro)** — Shehab Ahmed Mohamed Farrag (Translator)
+- **[@Zeyadmosalem](https://github.com/Zeyadmosalem)** — Zeyad Salem (Translator)
+- **[@gina925](https://github.com/gina925)** — Gina (Translator)
+
+*Status: Translation work is currently in progress with distributed human translation across balanced dataset chunks.*
+
+---
+
 ## Project Phases
-| Phase | Status | Description |
-|--------|---------|----------------|
-| **Phase 1: Schema Enrichment** | ✅ Completed | Added column semantics and FK context to BIRD schemas |
-| **Phase 2: Gold Graph Generation** | ✅ Completed | Built structural join graphs for each SQL instance |
-| **Phase 3: Arabic Translation** | 🚧 In Progress | Human translation of `question_ar` and `evidence_ar` fields |
+| Phase | Status | Description | Contributors |
+|--------|---------|----------------|--------------|
+| **Phase 1: Schema Enrichment** | ✅ Completed | Added column semantics and FK context to BIRD schemas | [@AbdelrahmanAboegela](https://github.com/AbdelrahmanAboegela) |
+| **Phase 2: Gold Graph Generation** | ✅ Completed | Built structural join graphs for each SQL instance | [@AbdelrahmanAboegela](https://github.com/AbdelrahmanAboegela) |
+| **Phase 3: Arabic Translation** | 🚧 In Progress | Human translation of `question_ar` and `evidence_ar` fields |  [Translation Team](#-translation-team) |
 
 ---
 
