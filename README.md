@@ -1,97 +1,151 @@
-﻿# BIRD Arabic Translation & Schema Context Augmentation
+# Arabic-BIRD: Schema-Enriched Arabic Extension of the BIRD Text-to-SQL Benchmark
 
-## Objective
-Translate the BIRD Text-to-SQL dataset (train/dev) into Arabic to expand highâ€‘quality Arabic resources. Currently there are only two Arabic versions of Spider; this project targets broader Arabic coverage for Textâ€‘toâ€‘SQL.
+## Overview
+This repository introduces **Arabic-BIRD**, a schema-enriched Arabic extension of the BIRD Text-to-SQL benchmark. The aim is to advance research in **cross-lingual semantic parsing** and provide a high-quality Arabic resource for the NLP community. The work contributes: (1) a **new Arabic Text-to-SQL dataset**, (2) a **reproducible methodology** for schema-aware multilingual dataset construction, and (3) an **extension of BIRD** with enriched schema context to improve model grounding.
 
-## Plan Overview
-- Step 1 — Schema enrichment (completed):
-  - Add perâ€‘column meanings and clear FK usage into the BIRD `*_tables.json` so models get better context (helps with ambiguous names like `id`, `code`, `abbreviation`).
-- Step 2 — Translation (in progress):
-  - Normalize question entries to include `question_en`/`question_ar` and `evidence_en`/`evidence_ar`.
-  - Split questions into 4 balanced chunks per file so 4 team members can translate in parallel with no duplicates.
+This release targets research in **multilingual Text-to-SQL**, **semantic parsing**, **schema linking**, and **cross-lingual generalization**.
 
-## What We Built
-- Schema enrichment to improve model grounding on ambiguous columns.
-- Normalized questions with Arabic placeholders to streamline translation.
-- Chunking utilities to distribute work across the team.
-- Gold graph generation with an interactive viewer to explore tables/joins per question.
+---
 
-## How It Works
-For each DB in train/dev tables JSON:
-- Locate `database_description/*.csv` by table name.
-- Build a map: `table -> { column -> column_description }` using robust normalization and encoding fallbacks (utf-8, utf-8-sig, cp1252, latin-1).
-- For `foreign_keys` (index pairs), resolve child/parent columns and attach a description object:
-  - child_table, child_column, parent_table, parent_column
-  - child_description, parent_description
-  - summary (concise, nonâ€‘redundant), usage
-- For all columns, populate `column_descriptions` aligned to `column_names_original` (empty string for the special `[-1, "*"]` row).
+## Contributions
+This work provides the community with:
+
+### ✅ 1. Arabic-BIRD Dataset (New Resource)
+A high-quality Arabic version of the BIRD Text-to-SQL dataset (train/dev), including aligned English–Arabic question and evidence pairs.
+
+### 🧠 2. Schema-Enriched Cross-Lingual Annotation Pipeline
+A reproducible methodology for enriching database schemas with column semantics and foreign-key context to enhance cross-lingual understanding.
+
+### 🌍 3. Extension of BIRD with Schema Context for Arabic
+An augmented version of BIRD incorporating column-level descriptions and FK usage summaries for improved schema linking and reasoning.
+
+---
+
+## Project Phases
+| Phase | Status | Description |
+|--------|---------|----------------|
+| **Phase 1: Schema Enrichment** | ✅ Completed | Added column semantics and FK context to BIRD schemas |
+| **Phase 2: Gold Graph Generation** | ✅ Completed | Built structural join graphs for each SQL instance |
+| **Phase 3: Arabic Translation** | 🚧 In Progress | Human translation of `question_ar` and `evidence_ar` fields |
+
+---
+
+## Methodology
+The pipeline systematically enriches and translates the BIRD dataset through the following stages:
+
+### **Schema Enrichment (Phase 1)**
+For each database in BIRD train/dev:
+- Extract table descriptions from CSV files using multi-encoding fallback
+- Map: `table → column → description`
+- Resolve FK pairs into child/parent relations and attach:
+  - semantic summaries
+  - usage context
+- Generate `*_tables_with_fk_desc.json`
+
+### **Gold Graph Generation (Phase 2)**
+- Construct table–column graphs per example to surface join paths and schema traversal
+- Provide an interactive visualization for researchers and annotators
+
+### **Arabic Translation (Phase 3)**
+- Normalize question structure to include `question_en`, `question_ar`, `evidence_en`, `evidence_ar`
+- Split dataset into four balanced subsets for distributed human translation
+
+---
 
 ## Reproducibility
-Prerequisites: Python 3.8+ (no external packages)
+All scripts are provided for full reproducibility.
 
-- Augment schemas (writes `*_with_fk_desc.json`):
-  - Train: `python BIRD/scripts/augment_fk_descriptions.py --split train`
-  - Dev: `python BIRD/scripts/augment_fk_descriptions.py --split dev`
-  - Both: `python BIRD/scripts/augment_fk_descriptions.py --split both`
+### Phase 1 — Schema Enrichment
+```bash
+python BIRD/scripts/augment_fk_descriptions.py --split train
+python BIRD/scripts/augment_fk_descriptions.py --split dev
+python BIRD/scripts/augment_fk_descriptions.py --split both
+```
 
-- Normalize questions & add Arabic placeholders:
-  - `python BIRD/scripts/add_ar_field.py`
+### Phase 2 — Gold Graph Generation
+Requires: `pip install sqlglot networkx`
+```bash
+python BIRD/scripts/build_gold_graphs.py --split both
+```
+Outputs:
+- `BIRD/train/train_gold_graphs.json`
+- `BIRD/dev_20240627/dev_gold_graphs.json`
 
-- Split questions into 4 chunks for translators:
-  - `python BIRD/scripts/split_questions.py BIRD/train/train.json BIRD/dev_20240627/dev.json BIRD/dev_20240627/dev_tied_append.json --parts 4`
+### Optional Viewer
+```bash
+pip install pyvis
+python BIRD/graph_viewer/server.py
+```
+Navigate to: http://127.0.0.1:8081
 
-### Gold graphs (Step 2 — completed)
-- Install deps: `pip install sqlglot networkx`
-- Build: `python BIRD/scripts/build_gold_graphs.py --split both`
-- Outputs:
-  - `BIRD/train/train_gold_graphs.json`
-  - `BIRD/dev_20240627/dev_gold_graphs.json`
+### Phase 3 — Translation Utilities
+Normalize bilingual fields:
+```bash
+python BIRD/scripts/add_ar_field.py
+```
+Split into 4 translator chunks:
+```bash
+python BIRD/scripts/split_questions.py BIRD/train/train.json \
+  BIRD/dev_20240627/dev.json BIRD/dev_20240627/dev_tied_append.json --parts 4
+```
 
-### Interactive graph viewer
-- Install: `pip install pyvis`
-- Run server: `python BIRD/graph_viewer/server.py`
-- Open: `http://127.0.0.1:8081` and filter by split/db, click a question
+---
 
-## Repository Contents (tracked)
-- `BIRD/train/`
-  - `train_tables.json` (original schema)
-  - `train_tables_with_fk_desc.json` (schema + FK and column descriptions)
-  - `train.json` (questions with EN/AR fields)
-  - `train_part{1..4}of4.json` (split for translators)
-- `BIRD/dev_20240627/`
-  - `dev_tables.json` (original schema)
-  - `dev_tables_with_fk_desc.json` (schema + FK and column descriptions)
-  - `dev.json`, `dev_tied_append.json` (questions with EN/AR fields)
-  - `dev_part{1..4}of4.json`, `dev_tied_append_part{1..4}of4.json` (split for translators)
-- `BIRD/scripts/`
-  - `augment_fk_descriptions.py` (augmentation)
-  - `add_ar_field.py` (EN/AR normalization)
-  - `split_questions.py` (chunking)
-  - `build_gold_graphs.py` (gold graph builder)
-- `BIRD/graph_viewer/`
-  - `server.py` (viewer server)
-  - `static/` (HTML/CSS/JS)
+## Repository Structure
+```
+BIRD/
+ ├─ train/
+ │   ├─ train_tables.json
+ │   ├─ train_tables_with_fk_desc.json
+ │   ├─ train.json
+ │   └─ train_part{1..4}of4.json
+ │
+ ├─ dev_20240627/
+ │   ├─ dev_tables.json
+ │   ├─ dev_tables_with_fk_desc.json
+ │   ├─ dev.json
+ │   ├─ dev_tied_append.json
+ │   ├─ dev_part{1..4}of4.json
+ │   └─ dev_tied_append_part{1..4}of4.json
+ │
+ ├─ scripts/
+ │   ├─ augment_fk_descriptions.py
+ │   ├─ add_ar_field.py
+ │   ├─ split_questions.py
+ │   └─ build_gold_graphs.py
+ │
+ └─ graph_viewer/
+     ├─ server.py
+     └─ static/
+```
+
+---
 
 ## Notes
-- If a CSV lacks a column description, the corresponding entry in `column_descriptions` stays empty; FK summaries still describe the relationship.
-- Name matching is robust (caseâ€‘insensitive, ignores separators) with encoding fallbacks.
-- No network is needed; dev databases ZIP is handled locally if present.
+- Missing column descriptions remain empty, but FK summaries preserve relational meaning
+- Column matching is robust and encoding-agnostic
+- Fully offline processing — no external downloads required
 
-## Next Steps
-- Step 3: Translate `question_ar` and `evidence_ar` across all chunks (in progress).
-- Optionally add Arabic schema summaries (e.g., FK `summary_ar`, Arabic column descriptions).
-- QA and publish an Arabic BIRD release for the community.
+---
+
+## Future Work
+- Complete Arabic translation for all fields
+- Provide Arabic schema summaries (`summary_ar`, `column_description_ar`)
+- Release evaluation benchmarks for Arabic Text-to-SQL
+- Prepare a research paper submission with evaluation results
+
+---
 
 ## Diagrams
 
 ### 1) Project Pipeline Overview
 ```mermaid
 flowchart LR
-    A[Start] --> B[Step 1: Schema Enrichment\n(Completed)]
-    B --> C[Step 2: Gold Graph Generation\n(Completed)]
-    C --> D[Step 3: Translation\n(In Progress)]
-    style B fill:#d7ffd9,stroke:#0a0;color:#000
-    style C fill:#d7ffd9,stroke:#0a0;color:#000
+    A["Start"] --> B["Step 1: Schema Enrichment (Completed)"]
+    B --> C["Step 2: Gold Graph Generation (Completed)"]
+    C --> D["Step 3: Translation (In Progress)"]
+    style B fill:#d7ffd9,stroke:#0a0,color:#000
+    style C fill:#d7ffd9,stroke:#0a0,color:#000
     style D fill:#fff7cc,stroke:#cc9a06,color:#000
 ```
 
@@ -99,36 +153,61 @@ flowchart LR
 ```mermaid
 flowchart TD
     S1[Load *_tables.json] --> S2[Locate database_description/*.csv]
-    S2 --> S3{Read CSV with fallback\nutf-8 → utf-8-sig → cp1252 → latin-1}
-    S3 --> S4[Map table -> columns -> descriptions]
+    S2 --> S3{Read CSV with fallback<br/>utf-8 → utf-8-sig → cp1252 → latin-1}
+    S3 --> S4[Map table → columns → descriptions]
     S4 --> S5[Resolve FK pairs to child/parent columns]
     S5 --> S6[Attach FK summaries + usage]
     S4 --> S7[Populate column_descriptions aligned to column_names_original]
     S6 --> S8[Write *_with_fk_desc.json]
     S7 --> S8
+
+    style S1 fill:#cfe8ff,stroke:#0077cc,color:#000
+    style S2 fill:#fff7cc,stroke:#cc9a06,color:#000
+    style S3 fill:#fff7cc,stroke:#cc9a06,color:#000
+    style S4 fill:#fff7cc,stroke:#cc9a06,color:#000
+    style S5 fill:#fff7cc,stroke:#cc9a06,color:#000
+    style S6 fill:#fff7cc,stroke:#cc9a06,color:#000
+    style S7 fill:#fff7cc,stroke:#cc9a06,color:#000
+    style S8 fill:#d7ffd9,stroke:#0a0,color:#000
+
 ```
 
 ### 3) Parallel Translation Workflow
 ```mermaid
 flowchart TD
     T1[Questions JSON] --> T2[Split into 4 balanced chunks]
-    T2 --> T3A[Team A]
-    T2 --> T3B[Team B]
-    T2 --> T3C[Team C]
-    T2 --> T3D[Team D]
+    T2 --> T3A[Team A Translations]
+    T2 --> T3B[Team B Translations]
+    T2 --> T3C[Team C Translations]
+    T2 --> T3D[Team D Translations]
     T3A --> T4[Merge Arabic fields]
     T3B --> T4
     T3C --> T4
     T3D --> T4
+
+    style T1 fill:#cfe8ff,stroke:#0077cc,color:#000
+    style T2 fill:#fff7cc,stroke:#cc9a06,color:#000
+    style T3A fill:#fff7cc,stroke:#cc9a06,color:#000
+    style T3B fill:#fff7cc,stroke:#cc9a06,color:#000
+    style T3C fill:#fff7cc,stroke:#cc9a06,color:#000
+    style T3D fill:#fff7cc,stroke:#cc9a06,color:#000
+    style T4 fill:#d7ffd9,stroke:#0a0,color:#000
+
 ```
 
 ### 4) Data Structure Transformation
 ```mermaid
 flowchart LR
-    D1[Original BIRD\ntrain/dev tables + questions]
-      --> D2[Augmented Schemas\n*_tables_with_fk_desc.json]
-      --> D3[Normalized Questions\nquestion_en/ar, evidence_en/ar]
-      --> D4[Gold Graphs\ntrain/dev_gold_graphs.json]
+    D1[Original BIRD<br/>train/dev tables + questions]
+        --> D2[Augmented Schemas<br/>*_tables_with_fk_desc.json]
+        --> D3[Normalized Questions<br/>question_en/ar, evidence_en/ar]
+        --> D4[Gold Graphs<br/>train/dev_gold_graphs.json]
+
+    style D1 fill:#cfe8ff,stroke:#0077cc,color:#000
+    style D2 fill:#fff7cc,stroke:#cc9a06,color:#000
+    style D3 fill:#fff7cc,stroke:#cc9a06,color:#000
+    style D4 fill:#d7ffd9,stroke:#0a0,color:#000
+
 ```
 
 ### 5) System Architecture
@@ -158,9 +237,19 @@ graph TD
     O2 --> P3 --> O3
     O1 --> P4
     O2 --> P4 --> O4
+
+    style I1 fill:#cfe8ff,stroke:#0077cc,color:#000
+    style I2 fill:#cfe8ff,stroke:#0077cc,color:#000
+    style P1 fill:#fff7cc,stroke:#cc9a06,color:#000
+    style P2 fill:#fff7cc,stroke:#cc9a06,color:#000
+    style P3 fill:#fff7cc,stroke:#cc9a06,color:#000
+    style P4 fill:#fff7cc,stroke:#cc9a06,color:#000
+    style O1 fill:#d7ffd9,stroke:#0a0,color:#000
+    style O2 fill:#d7ffd9,stroke:#0a0,color:#000
+    style O3 fill:#d7ffd9,stroke:#0a0,color:#000
+    style O4 fill:#d7ffd9,stroke:#0a0,color:#000
+
 ```
 
 ## License
-This repository includes derived metadata from the BIRD dataset. Please follow BIRDâ€™s terms for redistribution and use.
-
-
+This repository includes derived metadata from the BIRD dataset. Please adhere to the original BIRD licensing terms for redistribution and usage.
