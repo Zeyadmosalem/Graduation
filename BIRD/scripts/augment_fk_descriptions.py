@@ -131,6 +131,7 @@ def augment_split(
         # Map indices to ColumnRef for convenience
         col_names_orig: List[List] = db.get("column_names_original", [])
         tables_orig: List[str] = db.get("table_names_original", [])
+        tables_canon: List[str] = db.get("table_names", []) or tables_orig
 
         def idx_to_ref(idx: int) -> ColumnRef:
             t_idx, col = col_names_orig[idx]
@@ -164,10 +165,14 @@ def augment_split(
                 child_desc = ""
                 parent_desc = ""
                 if table_desc_map:
-                    c_tbl_map = table_desc_map.get(norm(child_table))
+                    c_tbl_map = table_desc_map.get(norm(child_table)) or (
+                        table_desc_map.get(norm(tables_canon[child.table_idx])) if child.table_idx < len(tables_canon) else None
+                    )
                     if c_tbl_map:
                         child_desc = c_tbl_map.get(norm(child.name), "")
-                    p_tbl_map = table_desc_map.get(norm(parent_table))
+                    p_tbl_map = table_desc_map.get(norm(parent_table)) or (
+                        table_desc_map.get(norm(tables_canon[parent.table_idx])) if parent.table_idx < len(tables_canon) else None
+                    )
                     if p_tbl_map:
                         parent_desc = p_tbl_map.get(norm(parent.name), "")
 
@@ -214,7 +219,9 @@ def augment_split(
             table_name = tables_orig[t_idx]
             desc = ""
             if table_desc_map:
-                tbl_map = table_desc_map.get(norm(table_name))
+                tbl_map = table_desc_map.get(norm(table_name)) or (
+                    table_desc_map.get(norm(tables_canon[t_idx])) if t_idx < len(tables_canon) else None
+                )
                 if tbl_map:
                     desc = tbl_map.get(norm(col_name), "")
             if not desc:

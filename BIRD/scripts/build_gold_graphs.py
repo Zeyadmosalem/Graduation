@@ -1,4 +1,4 @@
-import argparse
+﻿import argparse
 import json
 import re
 from collections import defaultdict
@@ -154,13 +154,33 @@ def build_gold_for_record(rec: dict, schema: dict):
     parsed = parse_sql(rec.get("SQL", "")) or ({}, [], [], [], [])
     alias_to_table, join_pairs, using_edges, tables_in_from, columns = parsed
 
-    # Resolve tables referenced by FROM/JOIN and joins/columns
-    tables_needed: Set[str] = set()
+    # Original vs canonical table names (handle mismatches like playstore vs googleplaystore)
+    tnames = schema.get("table_names") or []
+    torig = schema.get("table_names_original") or []
+    orig_to_canon = {o: (tnames[i] if i < len(tnames) else o) for i, o in enumerate(torig)}
+    orig_to_canon_lower = {o.lower(): (tnames[i] if i < len(tnames) else o) for i, o in enumerate(torig)}
+
+    def to_canon(name: Optional[str]) -> Optional[str]:
+        if not name:
+            return None
+        if name in table_to_cols:
+            return name
+        if name in orig_to_canon:
+            return orig_to_canon[name]
+        low = name.lower()
+        if low in orig_to_canon_lower:
+            return orig_to_canon_lower[low]
+        return name if name in table_to_cols else None
+
+    # Track display name -> canonical name for nodes
+    display_to_canon: Dict[str, str] = {}
+    edges: List[Dict] = []
+
     # Include explicit tables from FROM/JOIN
     for name in tables_in_from:
-        if name in table_to_cols:
-            tables_needed.add(name)
-    edges: List[Dict] = []
+        canon = to_canon(name)
+        if canon:
+            display_to_canon[name] = canon
 
     # EQ-based joins
     for ltab, lname, rtab, rname in join_pairs:
@@ -168,7 +188,13 @@ def build_gold_for_record(rec: dict, schema: dict):
         rt = alias_to_table.get(rtab or "", rtab or "")
         if not lt or not rt:
             continue
-        tables_needed.update([lt, rt])
+        # Record display->canon mapping for nodes
+        cl = to_canon(lt)
+        cr = to_canon(rt)
+        if cl:
+            display_to_canon.setdefault(lt, cl)
+        if cr:
+            display_to_canon.setdefault(rt, cr)
         # Prefer FK description if matches either direction
         desc = fk_desc_map.get((lt, lname, rt, rname)) or fk_desc_map_rev.get((lt, lname, rt, rname)) or ""
         edges.append({
@@ -183,7 +209,13 @@ def build_gold_for_record(rec: dict, schema: dict):
     for left_table, right_table, _alias, cols in using_edges:
         if not left_table or not right_table:
             continue
-        tables_needed.update([left_table, right_table])
+        # Record display->canon mapping
+        cl = to_canon(left_table)
+        cr = to_canon(right_table)
+        if cl:
+            display_to_canon.setdefault(left_table, cl)
+        if cr:
+            display_to_canon.setdefault(right_table, cr)
         left_cols = {c for c, _ in table_to_cols.get(left_table, [])}
         right_cols = {c for c, _ in table_to_cols.get(right_table, [])}
         shared = cols or list(left_cols.intersection(right_cols))
@@ -201,29 +233,45 @@ def build_gold_for_record(rec: dict, schema: dict):
     for t_alias, col in columns:
         if t_alias:
             real = alias_to_table.get(t_alias, t_alias)
-            if real in table_to_cols:
-                tables_needed.add(real)
+            canon = to_canon(real)
+            if canon:
+                display_to_canon.setdefault(real, canon)
         else:
             owners = [t for t, cols in table_to_cols.items() if any(cn == col for cn, _ in cols)]
             if len(owners) == 1:
-                tables_needed.add(owners[0])
+                display_to_canon.setdefault(owners[0], owners[0])
 
     # If nothing inferred yet, fallback: scan SQL for schema table names (whole words)
-    if not tables_needed:
+    if not display_to_canon:
         sql_l = (rec.get("SQL", "") or "").lower()
         for t in table_to_cols.keys():
             try:
                 if re.search(r"\b" + re.escape(t.lower()) + r"\b", sql_l):
-                    tables_needed.add(t)
+                    display_to_canon.setdefault(t, t)
             except re.error:
                 # Skip exotic names that break regex
                 continue
 
     # Build nodes with all columns+descriptions
+    def norm_name(s: str) -> str:
+        return "".join(ch for ch in (s or "").lower() if ch.isalnum())
+
+    # Prepare a case/separator-insensitive lookup to recover columns even if SQL table casing differs
+    canon_keys = {norm_name(k): k for k in table_to_cols.keys()}
+
+    def columns_for_table(name: str):
+        cols = table_to_cols.get(name)
+        if cols:
+            return cols
+        key = canon_keys.get(norm_name(name))
+        if key:
+            return table_to_cols.get(key, [])
+        return []
+
     nodes = []
-    for t in sorted(tables_needed):
-        cols = [{"name": cn, "description": desc} for (cn, desc) in table_to_cols.get(t, [])]
-        nodes.append({"table_name": t, "columns": cols})
+    for disp, canon in sorted(display_to_canon.items(), key=lambda kv: kv[0]):
+        cols = [{"name": cn, "description": desc} for (cn, desc) in columns_for_table(canon)]
+        nodes.append({"table_name": disp, "columns": cols})
 
     # Deduplicate edges
     seen = set()
@@ -302,3 +350,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
